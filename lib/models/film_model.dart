@@ -24,11 +24,26 @@ class FilmListResponse {
 
   FilmListResponse({required this.message, required this.data});
 
-  factory FilmListResponse.fromJson(Map<String, dynamic> json) =>
-      FilmListResponse(
-        message: json["message"],
+  factory FilmListResponse.fromJson(Map<String, dynamic> json) {
+    try {
+      print('Parsing FilmListResponse from JSON: $json');
+
+      final response = FilmListResponse(
+        message: json["message"] ?? "",
         data: List<Data>.from(json["data"].map((x) => Data.fromJson(x))),
       );
+
+      print(
+        'Successfully parsed FilmListResponse with ${response.data.length} films',
+      );
+      return response;
+    } catch (e, stackTrace) {
+      print('Error parsing FilmListResponse: $e');
+      print('Stack trace: $stackTrace');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     "message": message,
@@ -45,16 +60,28 @@ class FilmDetailResponse {
 
   FilmDetailResponse({required this.message, required this.data});
 
-  factory FilmDetailResponse.fromJson(Map<String, dynamic> json) =>
-      FilmDetailResponse(
-        message: json["message"],
+  factory FilmDetailResponse.fromJson(Map<String, dynamic> json) {
+    try {
+      print('Parsing FilmDetailResponse from JSON: $json');
+
+      final response = FilmDetailResponse(
+        message: json["message"] ?? "",
         data: Data.fromJson(json["data"]),
       );
 
-  Map<String, dynamic> toJson() => {
-    "message": message,
-    "data": data.toJson(),
-  };
+      print(
+        'Successfully parsed FilmDetailResponse for film: ${response.data.title}',
+      );
+      return response;
+    } catch (e, stackTrace) {
+      print('Error parsing FilmDetailResponse: $e');
+      print('Stack trace: $stackTrace');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> toJson() => {"message": message, "data": data.toJson()};
 }
 
 // ===============================
@@ -83,17 +110,47 @@ class Data {
     required this.imagePath,
   });
 
-  factory Data.fromJson(Map<String, dynamic> json) => Data(
-    id: json["id"],
-    title: json["title"],
-    description: json["description"],
-    genre: json["genre"],
-    director: json["director"],
-    writer: json["writer"],
-    stats: json["stats"],
-    imageUrl: json["image_url"] ?? '',
-    imagePath: json["image_path"] ?? '',
-  );
+  factory Data.fromJson(Map<String, dynamic> json) {
+    try {
+      // Safe parsing for id
+      int parseId(dynamic value) {
+        if (value is int) return value;
+        if (value is String) return int.tryParse(value) ?? 0;
+        if (value is double) return value.toInt();
+        return 0;
+      }
+
+      // Safe parsing for strings
+      String parseString(dynamic value) {
+        if (value is String) return value;
+        if (value != null) return value.toString();
+        return '';
+      }
+
+      // Debug logging
+      print('Parsing Data from JSON: $json');
+
+      final data = Data(
+        id: parseId(json["id"]),
+        title: parseString(json["title"]),
+        description: parseString(json["description"]),
+        genre: parseString(json["genre"]),
+        director: parseString(json["director"]),
+        writer: parseString(json["writer"]),
+        stats: parseString(json["stats"]),
+        imageUrl: parseString(json["image_url"]),
+        imagePath: parseString(json["image_path"]),
+      );
+
+      print('Successfully parsed Data: ${data.id} - ${data.title}');
+      return data;
+    } catch (e, stackTrace) {
+      print('Error parsing Data: $e');
+      print('Stack trace: $stackTrace');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     "id": id,

@@ -106,7 +106,6 @@ class _AddFilmPageState extends State<AddFilmPage> {
     });
 
     try {
-      // TODO: Get token from secure storage or auth service
       String? token = await AuthPreferences.getToken();
 
       await _filmService.createFilm(

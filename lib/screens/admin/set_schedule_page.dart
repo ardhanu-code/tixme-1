@@ -22,6 +22,7 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
   Data? _selectedFilm;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
+  int _quantity = 1;
   bool _isLoading = false;
   bool _isLoadingFilms = true;
 
@@ -117,6 +118,7 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
       await _scheduleService.createSchedule(
         filmId: _selectedFilm!.id,
         startTime: startTime,
+        quantity: _quantity,
         token: token,
       );
 
@@ -282,9 +284,13 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
                           items: _films.map((film) {
                             return DropdownMenuItem(
                               value: film,
-                              child: Text(
-                                film.title,
-                                overflow: TextOverflow.ellipsis,
+                              child: Container(
+                                width: double.infinity,
+                                child: Text(
+                                  film.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             );
                           }).toList(),
@@ -299,6 +305,7 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
                             }
                             return null;
                           },
+                          isExpanded: true,
                         ),
                 ),
 
@@ -378,6 +385,68 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
                   ),
                 ),
 
+                SizedBox(height: 16),
+
+                // Quantity Selection
+                Text(
+                  'Available Seats',
+                  style: GoogleFonts.lexend(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.event_seat, color: AppColor.primary),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: _quantity.toString(),
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter number of seats',
+                            hintStyle: GoogleFonts.lexend(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          style: GoogleFonts.lexend(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter number of seats';
+                            }
+                            final quantity = int.tryParse(value);
+                            if (quantity == null || quantity <= 0) {
+                              return 'Please enter a valid number greater than 0';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            final quantity = int.tryParse(value);
+                            if (quantity != null && quantity > 0) {
+                              setState(() {
+                                _quantity = quantity;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 SizedBox(height: 32),
 
                 // Selected Schedule Preview
@@ -418,6 +487,13 @@ class _SetSchedulePageState extends State<SetSchedulePage> {
                         ),
                         Text(
                           'Time: ${_selectedTime.format(context)}',
+                          style: GoogleFonts.lexend(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        Text(
+                          'Available Seats: $_quantity',
                           style: GoogleFonts.lexend(
                             fontSize: 12,
                             color: Colors.grey[600],

@@ -59,25 +59,43 @@ class ScheduleService {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
 
-        // Handle different response formats
-        if (responseData['data'] != null) {
-          if (responseData['data'] is List) {
-            return (responseData['data'] as List)
-                .map((item) => ScheduleData.fromJson(item))
-                .toList();
-          } else if (responseData['data'] is Map) {
-            // Single schedule
-            return [ScheduleData.fromJson(responseData['data'])];
+        try {
+          // Handle different response formats
+          if (responseData['data'] != null) {
+            if (responseData['data'] is List) {
+              return (responseData['data'] as List).map((item) {
+                try {
+                  return ScheduleData.fromJson(item);
+                } catch (e) {
+                  print('Error parsing schedule item: $e');
+                  print('Item data: $item');
+                  rethrow;
+                }
+              }).toList();
+            } else if (responseData['data'] is Map) {
+              // Single schedule
+              return [ScheduleData.fromJson(responseData['data'])];
+            }
+          } else if (responseData is List) {
+            // Direct list response
+            return responseData.map((item) {
+              try {
+                return ScheduleData.fromJson(item);
+              } catch (e) {
+                print('Error parsing schedule item: $e');
+                print('Item data: $item');
+                rethrow;
+              }
+            }).toList();
           }
-        } else if (responseData is List) {
-          // Direct list response
-          return responseData
-              .map((item) => ScheduleData.fromJson(item))
-              .toList();
-        }
 
-        // If no valid data found, return empty list
-        return [];
+          // If no valid data found, return empty list
+          return [];
+        } catch (parseError) {
+          print('Error parsing schedule data: $parseError');
+          print('Response data: $responseData');
+          throw Exception('Failed to parse schedule data: $parseError');
+        }
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? 'Failed to fetch schedules');
@@ -115,6 +133,7 @@ class ScheduleService {
   Future<JadwalResponse> createSchedule({
     required int filmId,
     required DateTime startTime,
+    required int quantity,
     required String token,
   }) async {
     try {
@@ -124,6 +143,7 @@ class ScheduleService {
         body: json.encode({
           'film_id': filmId,
           'start_time': _formatDateTime(startTime),
+          'quantity': quantity,
         }),
       );
 
@@ -145,6 +165,7 @@ class ScheduleService {
     required int scheduleId,
     int? filmId,
     DateTime? startTime,
+    int? quantity,
     required String token,
   }) async {
     try {
@@ -153,6 +174,7 @@ class ScheduleService {
       if (filmId != null) updateData['film_id'] = filmId;
       if (startTime != null)
         updateData['start_time'] = _formatDateTime(startTime);
+      if (quantity != null) updateData['quantity'] = quantity;
 
       final response = await http.put(
         Uri.parse('${Endpoint.baseUrl}/schedules/$scheduleId'),

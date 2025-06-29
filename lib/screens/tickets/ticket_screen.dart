@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/const/app_color.dart';
+import 'package:tixme/models/ticket_model.dart';
 import 'package:tixme/screens/tickets/update_ticket.dart';
-import 'package:tixme/services/ticket_service.dart';
 import 'package:tixme/services/session_service.dart';
+import 'package:tixme/services/ticket_service.dart';
 
 class TicketScreen extends StatefulWidget {
   const TicketScreen({super.key});
@@ -13,19 +14,18 @@ class TicketScreen extends StatefulWidget {
 }
 
 class _TicketScreenState extends State<TicketScreen> {
-  bool _isLoadingTickets = true;
   final TicketService _ticketService = TicketService();
-  List<Map<String, dynamic>> _allTickets = [];
-  List<Map<String, dynamic>> _filteredTickets = [];
-
   final TextEditingController _searchController = TextEditingController();
+
+  List<TicketData> _allTickets = [];
+  List<TicketData> _filteredTickets = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadTickets();
-
-    _searchController.addListener(_onSearchChanged);
+    _searchController.addListener(_filterTickets);
   }
 
   @override
@@ -34,8 +34,17 @@ class _TicketScreenState extends State<TicketScreen> {
     super.dispose();
   }
 
+  void _filterTickets() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredTickets = _allTickets.where((ticket) {
+        return ticket.schedule.film.title.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
   Future<void> _loadTickets() async {
-    setState(() => _isLoadingTickets = true);
+    setState(() => _isLoading = true);
 
     try {
       final token = await AuthPreferences.getToken();
@@ -43,16 +52,20 @@ class _TicketScreenState extends State<TicketScreen> {
         throw Exception('Token tidak ditemukan. Silakan login ulang.');
       }
 
-      final result = await _ticketService.getUserTickets(token);
-      final tickets = List<Map<String, dynamic>>.from(result['data'] ?? []);
+      print('Loading tickets...');
+      final tickets = await _ticketService.getUserTickets(token);
+      print('Loaded ${tickets.length} tickets');
+
       setState(() {
         _allTickets = tickets;
         _filteredTickets = tickets;
-        _isLoadingTickets = false;
+        _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoadingTickets = false);
+      print('Error loading tickets: $e');
+      setState(() => _isLoading = false);
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal memuat tiket: $e', style: GoogleFonts.lexend()),
@@ -62,28 +75,12 @@ class _TicketScreenState extends State<TicketScreen> {
     }
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredTickets = _allTickets.where((ticket) {
-        final title = ticket['schedule']?['film']?['title'] ?? '';
-        return title.toLowerCase().contains(query);
-      }).toList();
-    });
+  String _formatDate(DateTime dateTime) {
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
   }
 
-  String _formatDate(String? dateTimeStr) {
-    final dateTime = DateTime.tryParse(dateTimeStr ?? '');
-    return dateTime != null
-        ? '${dateTime.day}/${dateTime.month}/${dateTime.year}'
-        : 'N/A';
-  }
-
-  String _formatTime(String? dateTimeStr) {
-    final dateTime = DateTime.tryParse(dateTimeStr ?? '');
-    return dateTime != null
-        ? '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}'
-        : 'N/A';
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -94,8 +91,14 @@ class _TicketScreenState extends State<TicketScreen> {
         backgroundColor: AppColor.primary,
         title: Text(
           'My Tickets',
-          style: GoogleFonts.lexend(color: Colors.white),
+          style: GoogleFonts.lexend(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        centerTitle: false,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             onPressed: _loadTickets,
@@ -103,33 +106,105 @@ class _TicketScreenState extends State<TicketScreen> {
           ),
         ],
       ),
-      body: _isLoadingTickets
-          ? const Center(child: CircularProgressIndicator())
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColor.primary),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Memuat tiket...',
+                    style: GoogleFonts.lexend(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : Column(
               children: [
+                // Search Bar
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Cari berdasarkan nama film...',
-                      prefixIcon: Icon(Icons.search),
+                      hintStyle: GoogleFonts.lexend(color: Colors.grey[600]),
+                      prefixIcon: Icon(Icons.search, color: AppColor.primary),
                       filled: true,
-                      fillColor: Colors.grey[200],
+                      fillColor: Colors.grey[100],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
                     style: GoogleFonts.lexend(),
                   ),
                 ),
+
+                // Tickets List
                 Expanded(
                   child: _filteredTickets.isEmpty
                       ? Center(
-                          child: Text(
-                            'Tidak ada tiket ditemukan.',
-                            style: GoogleFonts.lexend(),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.confirmation_number_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                _allTickets.isEmpty
+                                    ? 'Tidak ada tiket ditemukan'
+                                    : 'Tidak ada tiket yang cocok',
+                                style: GoogleFonts.lexend(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                _allTickets.isEmpty
+                                    ? 'Belum ada tiket yang dibeli'
+                                    : 'Coba kata kunci yang berbeda',
+                                style: GoogleFonts.lexend(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                              if (_allTickets.isEmpty) ...[
+                                SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Navigate to movie booking page
+                                    Navigator.pushNamed(context, '/movies');
+                                  },
+                                  icon: Icon(Icons.movie),
+                                  label: Text(
+                                    'Booking Tiket',
+                                    style: GoogleFonts.lexend(),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         )
                       : ListView.builder(
@@ -144,94 +219,108 @@ class _TicketScreenState extends State<TicketScreen> {
     );
   }
 
-  Widget _buildTicketCard(Map<String, dynamic> ticket) {
-    final schedule = ticket['schedule'] ?? {};
-    final film = schedule['film'] ?? {};
+  Widget _buildTicketCard(TicketData ticket) {
+    final film = ticket.schedule.film;
+    final schedule = ticket.schedule;
 
     return GestureDetector(
       onLongPress: () => _showCancelDialog(ticket),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Material(
-          elevation: 4,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: film['image_url'] != null
-                        ? Image.network(
-                            film['image_url'],
-                            width: 80,
-                            height: 120,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            width: 80,
-                            height: 120,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.movie, color: Colors.grey[600]),
-                          ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Movie Poster
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  film.imageUrl,
+                  width: 80,
+                  height: 120,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80,
+                    height: 120,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.movie, color: Colors.grey[600], size: 32),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          film['title'] ?? 'Unknown Film',
-                          style: GoogleFonts.lexend(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: AppColor.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Date: ${_formatDate(schedule['start_time'])}',
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'Time: ${_formatTime(schedule['start_time'])}',
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'Quantity: ${ticket['quantity']}',
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+
+              const SizedBox(width: 16),
+
+              // Ticket Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      film.title,
+                      style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColor.primary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildInfoRow(
+                      Icons.calendar_today,
+                      'Date: ${_formatDate(schedule.startTime)}',
+                    ),
+                    _buildInfoRow(
+                      Icons.access_time,
+                      'Time: ${_formatTime(schedule.startTime)}',
+                    ),
+                    _buildInfoRow(
+                      Icons.confirmation_number,
+                      'Quantity: ${ticket.quantity}',
+                    ),
+                  ],
+                ),
+              ),
+
+              // Action Icon
+              Icon(Icons.more_vert, color: Colors.grey[600]),
+            ],
           ),
         ),
       ),
     );
   }
 
-  void _showCancelDialog(Map<String, dynamic> ticket) {
-    final schedule = ticket['schedule'] ?? {};
-    final film = schedule['film'] ?? {};
-    final filmTitle = film['title'] ?? 'this ticket';
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.lexend(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  void _showCancelDialog(TicketData ticket) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -241,14 +330,14 @@ class _TicketScreenState extends State<TicketScreen> {
           style: GoogleFonts.lexend(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Apa yang ingin kamu lakukan dengan tiket "$filmTitle"?',
+          'Apa yang ingin kamu lakukan dengan tiket "${ticket.schedule.film.title}"?',
           style: GoogleFonts.lexend(),
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _cancelTicket(schedule['id']);
+              _cancelTicket(ticket.id);
             },
             child: Text(
               'Batalkan Tiket',
@@ -262,7 +351,7 @@ class _TicketScreenState extends State<TicketScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => UpdateTicketScreen(
-                    ticketId: ticket['id'],
+                    ticketId: ticket.id,
                     currentTicket: ticket,
                   ),
                 ),
@@ -278,14 +367,14 @@ class _TicketScreenState extends State<TicketScreen> {
     );
   }
 
-  Future<void> _cancelTicket(int scheduleId) async {
+  Future<void> _cancelTicket(int ticketId) async {
     try {
       final token = await AuthPreferences.getToken();
       if (token == null || token.isEmpty) {
         throw Exception('Token tidak ditemukan.');
       }
 
-      await _ticketService.cancelTicket(scheduleId, token);
+      await _ticketService.cancelTicket(ticketId, token);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -297,7 +386,7 @@ class _TicketScreenState extends State<TicketScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        _loadTickets();
+        _loadTickets(); // Reload tickets
       }
     } catch (e) {
       if (!mounted) return;

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/const/app_color.dart';
-import 'package:tixme/models/schedule_model.dart';
+import 'package:tixme/models/schedule_model.dart' as schedule_model;
+import 'package:tixme/models/ticket_model.dart';
 import 'package:tixme/services/session_service.dart';
 import 'package:tixme/services/schedule_service.dart';
 import 'package:tixme/services/ticket_service.dart';
 
 class UpdateTicketScreen extends StatefulWidget {
   final int ticketId;
-  final Map<String, dynamic>? currentTicket;
+  final TicketData currentTicket;
 
   const UpdateTicketScreen({
     super.key,
     required this.ticketId,
-    this.currentTicket,
+    required this.currentTicket,
   });
 
   @override
@@ -24,8 +25,8 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
   final ScheduleService _scheduleService = ScheduleService();
   final TicketService _ticketService = TicketService();
 
-  List<ScheduleData> _schedules = [];
-  ScheduleData? _selectedSchedule;
+  List<schedule_model.ScheduleData> _schedules = [];
+  schedule_model.ScheduleData? _selectedSchedule;
   bool _isLoading = false;
   bool _isLoadingSchedule = true;
 
@@ -39,24 +40,23 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
     try {
       final token = await AuthPreferences.getToken();
       if (token == null || token.isEmpty) {
-        throw Exception("Token tidak ditemukan.");
+        throw Exception('Token tidak ditemukan. Silakan login ulang.');
       }
 
       final result = await _scheduleService.getSchedules(token);
 
       setState(() {
-        _schedules = (result.data ?? []).where((schedule) {
-          return schedule.film?.stats == 'now_playing';
-        }).toList();
+        _schedules = result.data
+            .where((schedule) => schedule.film?.stats == 'now_playing')
+            .toList();
         _isLoadingSchedule = false;
       });
     } catch (e) {
-      print('Error loading schedules: $e'); // Debug print
       setState(() => _isLoadingSchedule = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memuat jadwal: $e'),
+          content: Text('Gagal memuat jadwal: $e', style: GoogleFonts.lexend()),
           backgroundColor: Colors.red,
         ),
       );
@@ -67,7 +67,10 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
     if (_selectedSchedule == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Pilih jadwal terlebih dahulu'),
+          content: Text(
+            'Pilih jadwal terlebih dahulu',
+            style: GoogleFonts.lexend(),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -79,59 +82,53 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
     try {
       final token = await AuthPreferences.getToken();
       if (token == null || token.isEmpty) {
-        throw Exception("Token tidak ditemukan.");
+        throw Exception('Token tidak ditemukan.');
       }
 
       await _ticketService.updateTicketSchedule(
         ticketId: widget.ticketId,
-        newScheduleId: _selectedSchedule!.id!,
+        newScheduleId: _selectedSchedule!.id,
         token: token,
       );
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Jadwal berhasil diperbarui!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Jadwal berhasil diperbarui!',
+              style: GoogleFonts.lexend(),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memperbarui jadwal: $e'),
+          content: Text(
+            'Gagal memperbarui jadwal: $e',
+            style: GoogleFonts.lexend(),
+          ),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} '
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} '
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatDate(String? dateTimeStr) {
-    final dateTime = DateTime.tryParse(dateTimeStr ?? '');
-    return dateTime != null
-        ? '${dateTime.day}/${dateTime.month}/${dateTime.year}'
-        : 'N/A';
-  }
-
-  String _formatTime(String? dateTimeStr) {
-    final dateTime = DateTime.tryParse(dateTimeStr ?? '');
-    return dateTime != null
-        ? '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}'
-        : 'N/A';
-  }
-
   Widget _buildCurrentScheduleCard() {
-    if (widget.currentTicket == null) return SizedBox.shrink();
-
-    final film = widget.currentTicket!['film'] ?? {};
+    final film = widget.currentTicket.schedule.film;
+    final scheduleTime = widget.currentTicket.schedule.startTime;
 
     return Container(
       width: double.infinity,
@@ -154,7 +151,7 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            film['title'] ?? 'Unknown Film',
+            film.title,
             style: GoogleFonts.lexend(
               fontWeight: FontWeight.w500,
               fontSize: 14,
@@ -162,11 +159,7 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
           ),
           SizedBox(height: 4),
           Text(
-            widget.currentTicket!['start_time'] != null
-                ? _formatDateTime(
-                    DateTime.parse(widget.currentTicket!['start_time']),
-                  )
-                : 'Jadwal tidak tersedia',
+            _formatDateTime(scheduleTime),
             style: GoogleFonts.lexend(color: Colors.grey[600], fontSize: 12),
           ),
         ],
@@ -180,12 +173,16 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
       appBar: AppBar(
         title: Text(
           'Ubah Jadwal Tiket',
-          style: GoogleFonts.lexend(color: Colors.white),
+          style: GoogleFonts.lexend(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: AppColor.primary,
+        centerTitle: false,
+        elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
-          // Add refresh button to manually reload schedules
           IconButton(
             onPressed: () {
               setState(() {
@@ -203,87 +200,60 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: _isLoadingSchedule
-              ? Center(child: CircularProgressIndicator())
-              : _schedules.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.schedule, size: 64, color: Colors.grey[400]),
-                      SizedBox(height: 16),
-                      Text(
-                        'Tidak ada jadwal tersedia',
-                        style: GoogleFonts.lexend(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Coba refresh atau hubungi admin',
-                        style: GoogleFonts.lexend(color: Colors.grey[500]),
-                      ),
-                      SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _isLoadingSchedule = true;
-                            _schedules = [];
-                            _selectedSchedule = null;
-                          });
-                          _loadSchedules();
-                        },
-                        child: Text('Refresh'),
-                      ),
-                    ],
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColor.primary),
                   ),
                 )
+              : _schedules.isEmpty
+              ? _buildEmptyState()
               : SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Current Schedule Card
                       _buildCurrentScheduleCard(),
-
-                      // Dropdown Schedule
                       Text(
                         'Pilih Jadwal Baru',
-                        style: GoogleFonts.lexend(fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(height: 8),
-                      DropdownButtonFormField<ScheduleData>(
-                        value: _selectedSchedule,
-                        items: _schedules.map((schedule) {
-                          return DropdownMenuItem(
-                            value: schedule,
-                            child: Text(
-                              '${schedule.film?.title ?? "Unknown"} - ${_formatDateTime(schedule.startTime!)}',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedSchedule = value);
-                        },
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 16,
-                          ),
+                        style: GoogleFonts.lexend(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
-                        validator: (value) {
-                          if (value == null) return 'Pilih jadwal';
-                          return null;
-                        },
                       ),
-
+                      SizedBox(height: 12),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.grey.withOpacity(0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonFormField<schedule_model.ScheduleData>(
+                          value: _selectedSchedule,
+                          items: _schedules.map((schedule) {
+                            return DropdownMenuItem(
+                              value: schedule,
+                              child: Container(
+                                width: double.infinity,
+                                child: Text(
+                                  '${schedule.film?.title ?? 'Unknown'} - ${_formatDateTime(schedule.startTime)}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedSchedule = value);
+                          },
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            icon: Icon(Icons.schedule, color: AppColor.primary),
+                          ),
+                          isExpanded: true,
+                        ),
+                      ),
                       SizedBox(height: 32),
-
-                      // Submit Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -294,13 +264,24 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 2,
                           ),
                           child: _isLoading
-                              ? CircularProgressIndicator(color: Colors.white)
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
                               : Text(
                                   'Simpan Perubahan',
                                   style: GoogleFonts.lexend(
                                     color: Colors.white,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                         ),
@@ -309,6 +290,51 @@ class _UpdateTicketScreenState extends State<UpdateTicketScreen> {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.schedule, size: 64, color: Colors.grey[400]),
+          SizedBox(height: 16),
+          Text(
+            'Tidak ada jadwal tersedia',
+            style: GoogleFonts.lexend(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Coba refresh atau hubungi admin',
+            style: GoogleFonts.lexend(color: Colors.grey[500], fontSize: 14),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _isLoadingSchedule = true;
+                _schedules = [];
+                _selectedSchedule = null;
+              });
+              _loadSchedules();
+            },
+            icon: Icon(Icons.refresh),
+            label: Text('Refresh', style: GoogleFonts.lexend()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
