@@ -65,10 +65,13 @@ class TicketService {
   }
 
   // Cancel ticket
-  Future<Map<String, dynamic>> cancelTicket(int ticketId, String token) async {
+  Future<Map<String, dynamic>> cancelTicket(
+    int scheduleId,
+    String token,
+  ) async {
     try {
       final response = await http.put(
-        Uri.parse('${Endpoint.baseUrl}/tickets/$ticketId'),
+        Uri.parse('${Endpoint.baseUrl}/tickets/$scheduleId'),
         headers: _getAuthHeaders(token),
         body: json.encode({'status': 'cancelled'}),
       );
@@ -137,6 +140,4 @@ class TicketService {
       rethrow;
     }
   }
-
-
 }

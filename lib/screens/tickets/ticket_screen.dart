@@ -145,7 +145,8 @@ class _TicketScreenState extends State<TicketScreen> {
   }
 
   Widget _buildTicketCard(Map<String, dynamic> ticket) {
-    final film = ticket['film'] ?? {};
+    final schedule = ticket['schedule'] ?? {};
+    final film = schedule['film'] ?? {};
 
     return GestureDetector(
       onLongPress: () => _showCancelDialog(ticket),
@@ -194,14 +195,14 @@ class _TicketScreenState extends State<TicketScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Date: ${_formatDate(ticket['start_time'])}',
+                          'Date: ${_formatDate(schedule['start_time'])}',
                           style: GoogleFonts.lexend(
                             fontSize: 14,
                             color: Colors.grey[600],
                           ),
                         ),
                         Text(
-                          'Time: ${_formatTime(ticket['start_time'])}',
+                          'Time: ${_formatTime(schedule['start_time'])}',
                           style: GoogleFonts.lexend(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -227,7 +228,8 @@ class _TicketScreenState extends State<TicketScreen> {
   }
 
   void _showCancelDialog(Map<String, dynamic> ticket) {
-    final film = ticket['film'] ?? {};
+    final schedule = ticket['schedule'] ?? {};
+    final film = schedule['film'] ?? {};
     final filmTitle = film['title'] ?? 'this ticket';
 
     showDialog(
@@ -243,14 +245,10 @@ class _TicketScreenState extends State<TicketScreen> {
           style: GoogleFonts.lexend(),
         ),
         actions: [
-          // TextButton(
-          //   onPressed: () => Navigator.pop(context),
-          //   child: Text('Kembali', style: GoogleFonts.lexend()),
-          // ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _cancelTicket(ticket['id']);
+              _cancelTicket(schedule['id']);
             },
             child: Text(
               'Batalkan Tiket',
@@ -280,14 +278,14 @@ class _TicketScreenState extends State<TicketScreen> {
     );
   }
 
-  Future<void> _cancelTicket(int ticketId) async {
+  Future<void> _cancelTicket(int scheduleId) async {
     try {
       final token = await AuthPreferences.getToken();
       if (token == null || token.isEmpty) {
         throw Exception('Token tidak ditemukan.');
       }
 
-      await _ticketService.cancelTicket(ticketId, token);
+      await _ticketService.cancelTicket(scheduleId, token);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
