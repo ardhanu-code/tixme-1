@@ -306,12 +306,10 @@ class _BookPageState extends State<BookPage> {
                                 (val) => setState(() => _selectedDate = val),
                                 _formatDate,
                               ),
-
                               SizedBox(height: 24),
                               _buildSectionTitle('Select Cinema'),
                               SizedBox(height: 12),
                               _buildCinemaDropdown(),
-
                               SizedBox(height: 24),
                               _buildSectionTitle('Select Time'),
                               SizedBox(height: 12),
@@ -320,14 +318,11 @@ class _BookPageState extends State<BookPage> {
                                 _selectedTime,
                                 (val) => setState(() => _selectedTime = val),
                               ),
-
                               SizedBox(height: 24),
                               _buildSectionTitle('Number of Tickets'),
                               SizedBox(height: 12),
                               _buildTicketQuantitySelector(),
-
                               SizedBox(height: 32),
-
                               SizedBox(height: 24),
                               _buildBookButton(),
                             ],

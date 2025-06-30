@@ -64,34 +64,36 @@ class _MovieScreenState extends State<MovieScreen> {
       //ini datanya
       final List<Data> allFilms = response.data;
 
-      setState(() {
-        //data diatas diambil untuk ditampung dalam
-        //variabel penampung
-        nowPlayingFilms =
-            allFilms
-                .where(
-                  (film) =>
-                      film.stats.toLowerCase().replaceAll(' ', '_') ==
-                          'now_showing' ||
-                      film.stats.toLowerCase().replaceAll(' ', '_') ==
-                          'now_playing',
-                )
-                .toList();
+      if (mounted) {
+        setState(() {
+          //data diatas diambil untuk ditampung dalam
+          //variabel penampung
+          nowPlayingFilms = allFilms
+              .where(
+                (film) =>
+                    film.stats.toLowerCase().replaceAll(' ', '_') ==
+                        'now_showing' ||
+                    film.stats.toLowerCase().replaceAll(' ', '_') ==
+                        'now_playing',
+              )
+              .toList();
 
-        comingSoonFilms =
-            allFilms
-                .where(
-                  (film) =>
-                      film.stats.toLowerCase().replaceAll(' ', '_') ==
-                      'coming_soon',
-                )
-                .toList();
+          comingSoonFilms = allFilms
+              .where(
+                (film) =>
+                    film.stats.toLowerCase().replaceAll(' ', '_') ==
+                    'coming_soon',
+              )
+              .toList();
 
-        isLoading = false;
-      });
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('Failed to fetch films: $e');
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -99,43 +101,44 @@ class _MovieScreenState extends State<MovieScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child:
-            isLoading
-                ? const Center(
-                  child: CircularProgressIndicator(color: AppColor.primary),
-                )
-                : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 24),
-                      _buildUserHeader(),
-                      const SizedBox(height: 14),
-                      _buildCarouselBanner(),
-                      const SizedBox(height: 16),
-                      _buildSectionHeader(
-                        'Now Playing',
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AllMovieNowShowing(),
-                          ),
-                        ),
-                      ),
-                      _buildMovieList(nowPlayingFilms, 'now_playing'),
-                      const SizedBox(height: 8),
-                      _buildSectionHeader(
-                        'Coming Soon',
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AllComingSoonMovie(),
-                          ),
-                        ),
-                      ),
-                      _buildMovieList(comingSoonFilms, 'coming_soon'),
-                    ],
-                  ),
+        child: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColor.primary),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    _buildUserHeader(),
+                    const SizedBox(height: 14),
+                    _buildCarouselBanner(),
+                    const SizedBox(height: 16),
+                    _buildSectionHeader('Now Playing', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => AllMovieNowShowing()),
+                      ).then((_) {
+                        if (mounted) {
+                          fetchAndFilterFilms();
+                        }
+                      });
+                    }),
+                    _buildMovieList(nowPlayingFilms, 'now_playing'),
+                    const SizedBox(height: 8),
+                    _buildSectionHeader('Coming Soon', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => AllComingSoonMovie()),
+                      ).then((_) {
+                        if (mounted) {
+                          fetchAndFilterFilms();
+                        }
+                      });
+                    }),
+                    _buildMovieList(comingSoonFilms, 'coming_soon'),
+                  ],
                 ),
+              ),
       ),
     );
   }
@@ -179,7 +182,11 @@ class _MovieScreenState extends State<MovieScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AdminDashboardScreen()),
-            );
+            ).then((_) {
+              if (mounted) {
+                fetchAndFilterFilms();
+              }
+            });
           }),
           const SizedBox(width: 12),
         ],
@@ -275,9 +282,8 @@ class _MovieScreenState extends State<MovieScreen> {
           padEnds: false,
           itemCount: films.length,
           controller: PageController(viewportFraction: 0.5),
-          itemBuilder:
-              (context, index) =>
-                  _buildMovieCard(films[index], index, tagPrefix),
+          itemBuilder: (context, index) =>
+              _buildMovieCard(films[index], index, tagPrefix),
         ),
       ),
     );
@@ -290,18 +296,22 @@ class _MovieScreenState extends State<MovieScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           GestureDetector(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => DetailsMovie(
-                          posterUrl: film.imageUrl,
-                          movieTitle: film.title,
-                          heroTag: '${tagPrefix}_$index',
-                        ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetailsMovie(
+                    posterUrl: film.imageUrl,
+                    movieTitle: film.title,
+                    heroTag: '${tagPrefix}_$index',
                   ),
                 ),
+              ).then((_) {
+                if (mounted) {
+                  fetchAndFilterFilms();
+                }
+              });
+            },
             child: Hero(
               tag: '${tagPrefix}_$index',
               child: Container(
@@ -349,15 +359,18 @@ class _MovieScreenState extends State<MovieScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (_) => BookPage(
-                          filmId: film.id,
-                          posterUrl: film.imageUrl,
-                          movieTitle: film.title,
-                          heroTag: '${tagPrefix}_$index',
-                        ),
+                    builder: (_) => BookPage(
+                      filmId: film.id,
+                      posterUrl: film.imageUrl,
+                      movieTitle: film.title,
+                      heroTag: '${tagPrefix}_$index',
+                    ),
                   ),
-                );
+                ).then((_) {
+                  if (mounted) {
+                    fetchAndFilterFilms();
+                  }
+                });
               }
             },
             style: OutlinedButton.styleFrom(

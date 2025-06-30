@@ -417,7 +417,6 @@ class _AddFilmPageState extends State<AddFilmPage> {
                         value: 'coming_soon',
                         child: Text('Coming Soon'),
                       ),
-                      DropdownMenuItem(value: 'ended', child: Text('Ended')),
                     ],
                     onChanged: (value) {
                       setState(() {
