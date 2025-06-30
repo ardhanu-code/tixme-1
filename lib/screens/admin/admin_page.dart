@@ -92,30 +92,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed:
-                  _isLoading
-                      ? null
-                      : () {
-                        Navigator.of(context).pop();
-                        _logout();
-                      },
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      Navigator.of(context).pop();
+                      _logout();
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child:
-                  _isLoading
-                      ? SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                      : Text('Logout', style: GoogleFonts.lexend()),
+              child: _isLoading
+                  ? SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text('Logout', style: GoogleFonts.lexend()),
             ),
           ],
         );
@@ -329,19 +325,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           elevation: 2,
                         ),
-                        icon:
-                            _isLoading
-                                ? SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                        icon: _isLoading
+                            ? SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
                                   ),
-                                )
-                                : Icon(Icons.logout),
+                                ),
+                              )
+                            : Icon(Icons.logout),
                         label: Text(
                           _isLoading ? 'Logging out...' : 'Logout',
                           style: GoogleFonts.lexend(

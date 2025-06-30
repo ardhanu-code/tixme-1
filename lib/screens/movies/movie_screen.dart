@@ -113,6 +113,7 @@ class _MovieScreenState extends State<MovieScreen> {
                     const SizedBox(height: 14),
                     _buildCarouselBanner(),
                     const SizedBox(height: 16),
+                    
                     _buildSectionHeader('Now Playing', () {
                       Navigator.push(
                         context,

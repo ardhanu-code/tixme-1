@@ -289,12 +289,16 @@ class _TicketScreenState extends State<TicketScreen> {
                       Icons.confirmation_number,
                       'Quantity: ${ticket.quantity}',
                     ),
+                    Text(
+                      'Press for action details',
+                      style: GoogleFonts.lexend(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey[600],
+                      ),
+                    ),
                   ],
                 ),
               ),
-
-              // Action Icon
-              Icon(Icons.more_vert, color: Colors.grey[600]),
             ],
           ),
         ),
