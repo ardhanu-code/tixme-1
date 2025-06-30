@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/authentication/login_page.dart';
 import 'package:tixme/const/app_color.dart';
 import 'package:tixme/screens/admin/add_film_page.dart';
+import 'package:tixme/screens/admin/manage_film.dart';
 import 'package:tixme/screens/admin/set_schedule_page.dart';
+import 'package:tixme/services/film_service.dart';
 import 'package:tixme/services/session_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -90,26 +92,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () {
-                      Navigator.of(context).pop();
-                      _logout();
-                    },
+              onPressed:
+                  _isLoading
+                      ? null
+                      : () {
+                        Navigator.of(context).pop();
+                        _logout();
+                      },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: _isLoading
-                  ? SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text('Logout', style: GoogleFonts.lexend()),
+              child:
+                  _isLoading
+                      ? SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                      : Text('Logout', style: GoogleFonts.lexend()),
             ),
           ],
         );
@@ -274,14 +280,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             subtitle: 'Edit & delete movies',
                             icon: Icons.edit_note,
                             color: Colors.orange,
-                            onTap: () {
-                              // TODO: Navigate to manage films page
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Coming Soon!'),
-                                  backgroundColor: AppColor.primary,
-                                ),
-                              );
+                            onTap: () async {
+                              final film = await FilmService().getFilms();
+                              if (film.data.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ManageFilmsPage(),
+                                  ),
+                                );
+                              }
                             },
                           ),
 
@@ -321,18 +329,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           elevation: 2,
                         ),
-                        icon: _isLoading
-                            ? SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                        icon:
+                            _isLoading
+                                ? SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : Icon(Icons.logout),
+                                )
+                                : Icon(Icons.logout),
                         label: Text(
                           _isLoading ? 'Logging out...' : 'Logout',
                           style: GoogleFonts.lexend(

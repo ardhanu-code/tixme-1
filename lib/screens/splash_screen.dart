@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tixme/screens/home_screen.dart';
-import 'package:tixme/authentication/login_page.dart';
-import 'package:tixme/services/session_service.dart'; // untuk AuthPreferences
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tixme/authentication/login_page.dart';
 import 'package:tixme/const/app_color.dart';
+import 'package:tixme/screens/home_screen.dart';
+import 'package:tixme/services/session_service.dart'; // untuk AuthPreferences
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final isLoggedIn = await AuthPreferences.getLoginStatus();
+    final isLoggedIn = await AuthPreferences.isLoggedIn();
     final token = await AuthPreferences.getToken();
 
     await Future.delayed(const Duration(seconds: 2)); // efek loading
@@ -42,25 +42,25 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColor.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.movie_creation, color: Colors.white, size: 80),
-            const SizedBox(height: 20),
-            Text(
-              'TixMe',
-              style: GoogleFonts.lexend(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Spacer(),
+              Image.asset(
+                'assets/images/tixme_logo.png',
+                height: 200,
+                width: 200,
               ),
-            ),
-            const SizedBox(height: 12),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
+              Spacer(),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              Spacer(),
+              Text('v1.0.0', style: GoogleFonts.lexend(color: Colors.white)),
+            ],
+          ),
         ),
       ),
     );

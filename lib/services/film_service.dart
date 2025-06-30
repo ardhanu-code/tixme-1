@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:http/http.dart' as http;
 import 'package:tixme/endpoint/base_url.dart';
 import 'package:tixme/services/session_service.dart';
+
 import '../models/film_model.dart';
 
 class FilmService {
@@ -121,10 +123,10 @@ class FilmService {
   }
 
   Future<FilmDetailResponse> updateFilm({
-    required int filmId,
-    String? title,
-    String? description,
-    String? genre,
+    required int id,
+    required String title,
+    required String description,
+    required String genre,
     dynamic director,
     dynamic writer,
     dynamic stats,
@@ -133,29 +135,34 @@ class FilmService {
     required String token,
   }) async {
     try {
-      final Map<String, dynamic> updateData = {};
-
-      if (title != null) updateData['title'] = title;
-      if (description != null) updateData['description'] = description;
-      if (genre != null) updateData['genre'] = genre;
-      if (director != null) updateData['director'] = director;
-      if (writer != null) updateData['writer'] = writer;
-      if (stats != null) updateData['stats'] = stats;
+      String? imageBase64;
 
       if (imagePath != null && imagePath is String && imagePath.isNotEmpty) {
         final imageFile = File(imagePath);
         if (await imageFile.exists()) {
-          String imageBase64 = await _imageToBase64(imageFile);
-          updateData['image_base64'] = imageBase64;
+          imageBase64 = await _imageToBase64(imageFile);
         }
+      }
+
+      final Map<String, dynamic> filmData = {
+        'title': title,
+        'description': description,
+        'genre': genre,
+        'director': director,
+        'writer': writer,
+        'stats': stats,
+      };
+
+      if (imageBase64 != null) {
+        filmData['image_base64'] = imageBase64;
       } else if (imageUrl != null && imageUrl.isNotEmpty) {
-        updateData['image_url'] = imageUrl;
+        filmData['image_url'] = imageUrl;
       }
 
       final response = await http.put(
-        Uri.parse('${Endpoint.baseUrl}/films/$filmId'),
+        Uri.parse('${Endpoint.baseUrl}/films/$id'),
         headers: _getAuthHeaders(token),
-        body: json.encode(updateData),
+        body: json.encode(filmData),
       );
 
       if (response.statusCode == 200) {

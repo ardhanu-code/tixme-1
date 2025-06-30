@@ -37,11 +37,6 @@ class AuthPreferences {
     return prefs.getBool('is_logged_in') ?? false;
   }
 
-  static Future<bool> getLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false;
-  }
-
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

@@ -4,10 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/const/app_color.dart';
 import 'package:tixme/models/film_model.dart';
 import 'package:tixme/screens/admin/admin_page.dart';
-import 'package:tixme/screens/movies/details_screen.dart';
-import 'package:tixme/screens/movies/all_movie_now_showing.dart';
 import 'package:tixme/screens/movies/all_coming_soon_movie.dart';
+import 'package:tixme/screens/movies/all_movie_now_showing.dart';
 import 'package:tixme/screens/movies/book_page.dart';
+import 'package:tixme/screens/movies/details_screen.dart';
 import 'package:tixme/services/film_service.dart';
 import 'package:tixme/services/session_service.dart';
 
@@ -67,23 +67,25 @@ class _MovieScreenState extends State<MovieScreen> {
       setState(() {
         //data diatas diambil untuk ditampung dalam
         //variabel penampung
-        nowPlayingFilms = allFilms
-            .where(
-              (film) =>
-                  film.stats.toLowerCase().replaceAll(' ', '_') ==
-                      'now_showing' ||
-                  film.stats.toLowerCase().replaceAll(' ', '_') ==
-                      'now_playing',
-            )
-            .toList();
+        nowPlayingFilms =
+            allFilms
+                .where(
+                  (film) =>
+                      film.stats.toLowerCase().replaceAll(' ', '_') ==
+                          'now_showing' ||
+                      film.stats.toLowerCase().replaceAll(' ', '_') ==
+                          'now_playing',
+                )
+                .toList();
 
-        comingSoonFilms = allFilms
-            .where(
-              (film) =>
-                  film.stats.toLowerCase().replaceAll(' ', '_') ==
-                  'coming_soon',
-            )
-            .toList();
+        comingSoonFilms =
+            allFilms
+                .where(
+                  (film) =>
+                      film.stats.toLowerCase().replaceAll(' ', '_') ==
+                      'coming_soon',
+                )
+                .toList();
 
         isLoading = false;
       });
@@ -97,36 +99,43 @@ class _MovieScreenState extends State<MovieScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    _buildUserHeader(),
-                    const SizedBox(height: 14),
-                    _buildCarouselBanner(),
-                    const SizedBox(height: 16),
-                    _buildSectionHeader(
-                      'Now Playing',
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => AllMovieNowShowing()),
+        child:
+            isLoading
+                ? const Center(
+                  child: CircularProgressIndicator(color: AppColor.primary),
+                )
+                : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 24),
+                      _buildUserHeader(),
+                      const SizedBox(height: 14),
+                      _buildCarouselBanner(),
+                      const SizedBox(height: 16),
+                      _buildSectionHeader(
+                        'Now Playing',
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AllMovieNowShowing(),
+                          ),
+                        ),
                       ),
-                    ),
-                    _buildMovieList(nowPlayingFilms, 'now_playing'),
-                    const SizedBox(height: 8),
-                    _buildSectionHeader(
-                      'Coming Soon',
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => AllComingSoonMovie()),
+                      _buildMovieList(nowPlayingFilms, 'now_playing'),
+                      const SizedBox(height: 8),
+                      _buildSectionHeader(
+                        'Coming Soon',
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AllComingSoonMovie(),
+                          ),
+                        ),
                       ),
-                    ),
-                    _buildMovieList(comingSoonFilms, 'coming_soon'),
-                  ],
+                      _buildMovieList(comingSoonFilms, 'coming_soon'),
+                    ],
+                  ),
                 ),
-              ),
       ),
     );
   }
@@ -266,8 +275,9 @@ class _MovieScreenState extends State<MovieScreen> {
           padEnds: false,
           itemCount: films.length,
           controller: PageController(viewportFraction: 0.5),
-          itemBuilder: (context, index) =>
-              _buildMovieCard(films[index], index, tagPrefix),
+          itemBuilder:
+              (context, index) =>
+                  _buildMovieCard(films[index], index, tagPrefix),
         ),
       ),
     );
@@ -280,16 +290,18 @@ class _MovieScreenState extends State<MovieScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DetailsMovie(
-                  posterUrl: film.imageUrl,
-                  movieTitle: film.title,
-                  heroTag: '${tagPrefix}_$index',
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => DetailsMovie(
+                          posterUrl: film.imageUrl,
+                          movieTitle: film.title,
+                          heroTag: '${tagPrefix}_$index',
+                        ),
+                  ),
                 ),
-              ),
-            ),
             child: Hero(
               tag: '${tagPrefix}_$index',
               child: Container(
@@ -337,12 +349,13 @@ class _MovieScreenState extends State<MovieScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => BookPage(
-                      filmId: film.id,
-                      posterUrl: film.imageUrl,
-                      movieTitle: film.title,
-                      heroTag: '${tagPrefix}_$index',
-                    ),
+                    builder:
+                        (_) => BookPage(
+                          filmId: film.id,
+                          posterUrl: film.imageUrl,
+                          movieTitle: film.title,
+                          heroTag: '${tagPrefix}_$index',
+                        ),
                   ),
                 );
               }
