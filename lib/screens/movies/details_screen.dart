@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/models/film_model.dart';
 import 'package:tixme/services/film_service.dart';
-import 'package:tixme/services/session_service.dart';
 
 class DetailsMovie extends StatefulWidget {
   final String posterUrl;

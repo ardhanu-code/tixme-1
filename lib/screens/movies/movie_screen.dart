@@ -1,5 +1,6 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tixme/const/app_color.dart';
 import 'package:tixme/models/film_model.dart';
@@ -35,6 +36,14 @@ class _MovieScreenState extends State<MovieScreen> {
   @override
   void initState() {
     super.initState();
+    // Mengatur status bar agar terlihat
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
     _loadUserData();
     fetchAndFilterFilms();
   }
@@ -113,7 +122,7 @@ class _MovieScreenState extends State<MovieScreen> {
                     const SizedBox(height: 14),
                     _buildCarouselBanner(),
                     const SizedBox(height: 16),
-                    
+
                     _buildSectionHeader('Now Playing', () {
                       Navigator.push(
                         context,
@@ -151,7 +160,10 @@ class _MovieScreenState extends State<MovieScreen> {
       child: Row(
         children: [
           const SizedBox(width: 18),
-          const CircleAvatar(radius: 26, child: Icon(Icons.person)),
+          CircleAvatar(
+            radius: 26,
+            backgroundImage: AssetImage('assets/images/me.jpg'),
+          ),
           const SizedBox(width: 12),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
